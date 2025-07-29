@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic
+pydantic-settings
+psycopg2-binary
+sqlalchemy
+python-multipart
+python-jose[cryptography]
+pytest
+pytest-asyncio
+pytest-cov
+pytest-mock
+pytest-mock-resources
+alembic
