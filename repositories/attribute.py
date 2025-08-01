@@ -29,7 +29,7 @@ def get_attribute_id_name_map(
     attribute_ids: List[int]
 ) -> Optional[Dict[int, str]]:
     """
-    Get a mapping of attribute_id (as string) → attribute name (i.e. actual column name).
+    Get a mapping of attribute_id (as string) -> attribute name (i.e. actual column name).
     """
     row = db.query(
         MasterFormAttribute.attribute_id, 

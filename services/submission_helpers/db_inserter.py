@@ -1,10 +1,16 @@
 from sqlalchemy import Table, insert
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError
 from db.dependencies import DB_dependency
 from typing import List, Dict, Any
 from repositories.attribute import get_attributes_by_ids
 from db.session import metadata
 from utils.logger import get_logger
+from utils.exceptions import (
+    InsertionError,
+    ForeignKeyError,
+    DatabaseError,
+    AttributeNotFoundException
+)
 
 logger = get_logger("dB_inserter_logger")
 
@@ -16,9 +22,9 @@ def insert_records_with_attribute_and_fk_mapping(
 ) -> Dict[str, Any]:
     """
     Inserts records into DB in topological order.
-     Converts attribute IDs → column names.
+     Converts attribute IDs -> column names.
      Captures PKs for each inserted record.
-     Handles multiple PK → FK mappings for child tables.
+     Handles multiple PK -> FK mappings for child tables.
      Logs every important step for debugging.
     """
 
@@ -44,7 +50,7 @@ def insert_records_with_attribute_and_fk_mapping(
                 logger.info(f" No data to insert for table: {table_name}")
                 continue
 
-            #  Build attribute_id → column_name mapping
+            #  Build attribute_id -> column_name mapping
             attr_ids = {k for r in records for k in r.keys() if k.isdigit()}
             attributes = get_attributes_by_ids(db, list(map(int, attr_ids)))
             attr_map = {str(attr.attribute_id): attr.name for attr in attributes}
@@ -111,7 +117,7 @@ def insert_records_with_attribute_and_fk_mapping(
                     #  Insert record
                     result = db.execute(insert(table_obj).values(transformed_record))
                     inserted_pk = result.inserted_primary_key[0]
-                    logger.info(f" Inserted into {table_name} → PK={inserted_pk}.")
+                    logger.info(f" Inserted into {table_name} -> PK={inserted_pk}.")
 
                     generated_ids[table_name] = {
                         "pk_col": pk_col_name,
@@ -131,14 +137,25 @@ def insert_records_with_attribute_and_fk_mapping(
                                 generated_ids[tgt_table]["mappings"][tgt_fk_col] = {}
 
                             generated_ids[tgt_table]["mappings"][tgt_fk_col][str(inserted_pk)] = inserted_pk
-                            logger.debug(f" FK Mapping saved: {tgt_table}.{tgt_fk_col} → {inserted_pk}")
+                            logger.debug(f" FK Mapping saved: {tgt_table}.{tgt_fk_col} -> {inserted_pk}")
 
                     db.commit()
 
-                except SQLAlchemyError as e:
-                    logger.error(f" DB Error inserting into {table_name}: {e}")
+                except IntegrityError as e:
+                    logger.error(f" Integrity Error inserting into {table_name}: {e}")
                     db.rollback()
-                    raise
+                    if "foreign key" in str(e).lower():
+                        raise ForeignKeyError(table_name, "unknown", "unknown", {"original_error": str(e)})
+                    else:
+                        raise InsertionError(table_name, transformed_record, e)
+                except DataError as e:
+                    logger.error(f" Data Error inserting into {table_name}: {e}")
+                    db.rollback()
+                    raise InsertionError(table_name, transformed_record, e)
+                except SQLAlchemyError as e:
+                    logger.error(f" Database Error inserting into {table_name}: {e}")
+                    db.rollback()
+                    raise InsertionError(table_name, transformed_record, e)
 
         logger.info(" All records inserted successfully.")
         logger.debug(f"Final Generated IDs: {generated_ids}")
@@ -147,4 +164,4 @@ def insert_records_with_attribute_and_fk_mapping(
     except Exception as e:
         logger.error(f" Fatal Error in insert flow: {e}")
         db.rollback()
-        raise
+        raise DatabaseError(f"Fatal error in database insertion: {str(e)}")

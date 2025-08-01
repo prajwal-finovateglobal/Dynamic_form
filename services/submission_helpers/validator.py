@@ -5,6 +5,13 @@ from repositories.attribute import get_attributes_by_ids
 from repositories.form import get_form_by_id
 from repositories.subForm import get_sub_forms_by_ids
 from utils.logger import get_logger
+from utils.exceptions import (
+    ValidationError,
+    RequiredAttributeMissingError,
+    DataTypeMismatchError,
+    FormNotFoundException,
+    SubFormNotFoundException
+)
 
 logger = get_logger("validation_logger")
 
@@ -114,7 +121,7 @@ def validate_required_attributes(
     """
     form_id = payload.get("form_id")
     if not form_id:
-        raise ValueError("Form ID is missing in the payload")
+        raise ValidationError("Form ID is missing in the payload", ["Form ID is required"])
     
     sub_forms = payload.get("sub_forms", [])
 
@@ -122,7 +129,7 @@ def validate_required_attributes(
 
     form = get_form_by_id(db, form_id)
     if not form:
-        raise ValueError(f"Form with ID {form_id} not found")
+        raise FormNotFoundException(form_id)
     
     form_values = payload.get("values", {})
     form_attribute_ids = list(map(int, form_values.keys()))
@@ -168,6 +175,6 @@ def validate_required_attributes(
             )
     logger.info(f"All errors: {all_errors}")
     if all_errors:
-        raise ValueError(f"Validation failed for form {form_id}: {', '.join(all_errors)}")
+        raise ValidationError(f"Validation failed for form {form_id}", all_errors)
     
     

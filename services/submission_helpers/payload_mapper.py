@@ -4,6 +4,11 @@ from repositories.form import get_form_by_id
 from repositories.subForm import get_sub_forms_by_ids
 from repositories.fk_mapping import get_fk_mappings_for_subforms
 from utils.logger import get_logger
+from utils.exceptions import (
+    FormNotFoundException,
+    SubFormNotFoundException,
+    PayloadMappingError
+)
 
 logger = get_logger("payload_mapper_logger")
 
@@ -19,9 +24,10 @@ def map_payload_to_tables(db: DB_dependency, payload: dict) -> dict:
 
     # ---- Process Form Table ----
     form_model = get_form_by_id(db, form_id)
-    if not form_model or not form_model.table_name:
-        logger.error(f"Form with ID {form_id} not found or has no table name.")
-        raise ValueError(f"Form with ID {form_id} not found or has no table name.")
+    if not form_model:
+        raise FormNotFoundException(form_id)
+    if not form_model.table_name:
+        raise PayloadMappingError(f"Form with ID {form_id} has no table name configured", form_id)
 
     table_records_map[form_model.table_name] = {
         "records" : [payload.get('values', [])]
@@ -52,6 +58,7 @@ def map_payload_to_tables(db: DB_dependency, payload: dict) -> dict:
 
         if not sub_form_table_name:
             logger.warning(f"Sub-form with ID {sub_form_id} not found or has no table name.")
+            # Don't raise exception here, just skip this subform
             continue
         
         sub_form_values = sub_form.get('values')

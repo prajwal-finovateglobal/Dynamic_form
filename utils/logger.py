@@ -27,8 +27,22 @@ def get_logger(name: str) -> logging.Logger:
         settings.LOG_DATEFORMAT
     )
 
-    # Console Handler
-    console_handler = logging.StreamHandler()
+    # Console Handler with Unicode-safe encoding
+    class UnicodeSafeStreamHandler(logging.StreamHandler):
+        def emit(self, record):
+            try:
+                super().emit(record)
+            except UnicodeEncodeError:
+                # Fallback: encode as ASCII with replacement characters
+                msg = self.format(record)
+                try:
+                    self.stream.write(msg.encode('ascii', 'replace').decode('ascii'))
+                except Exception:
+                    # Last resort: write raw message without formatting
+                    self.stream.write(f"[{record.levelname}] {record.getMessage()}\n")
+                self.flush()
+    
+    console_handler = UnicodeSafeStreamHandler()
     console_handler.setFormatter(formatter)
     console_handler.setLevel(getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
     logger.addHandler(console_handler)
