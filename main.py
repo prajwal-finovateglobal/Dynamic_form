@@ -18,5 +18,5 @@ register_exception_handlers(app)
 
 # Include routers
 app.include_router(submission.router, prefix="/form", tags=["submission"])
-app.include_router(debug_router.router)
+# app.include_router(debug_router.router)
 
