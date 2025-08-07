@@ -86,11 +86,10 @@ def _validate_attributes_by_ids(
     attributes = get_attributes_by_ids(db, attribute_ids)
     attr_map = {attr.attribute_id: attr for attr in attributes}
 
+    # Check if all required attributes are present in the provided values
     for required_attr_id in required_attribute_ids:
-        if required_attr_id not in attr_map:
+        if str(required_attr_id) not in provided_values or provided_values.get(str(required_attr_id)) in [None, ""]:
             errors.append(f"[{source_name}] Missing required attribute ID: {required_attr_id}")
-
-    
 
     for attr in attr_map.values():
         attr_id = attr.attribute_id
@@ -98,13 +97,8 @@ def _validate_attributes_by_ids(
 
         logger.info(f"Attribute ID: {attr_id}, Value: {value}")
 
-        if int(attr_id)  not in required_attribute_ids:
-            errors.append(f"[{source_name}] Attribute {attr_id} is not required")
-            if (value is None or value == ""):
-                errors.append(f"[{source_name}] Missing required attribute ID: {attr_id}")
-            
-        
-        if value is not None:
+        # For all attributes (required or not), validate data type if value is provided
+        if value is not None and value != "":
             logger.info(f"check : {attr.attribute_data_type}")
             if not _validate_type(value, attr.attribute_data_type):
                 errors.append(f"[{source_name}] Attribute {attr_id} expects {attr.attribute_data_type}, got {type(value).__name__}")

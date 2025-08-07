@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import Table, insert
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError
 from db.dependencies import DB_dependency
@@ -114,6 +115,11 @@ def insert_records_with_attribute_and_fk_mapping(
                             logger.debug(f"  Pre-existing mapping {fk_col} not applicable")
 
                 try:
+                    # Generate UUID for primary key if not provided
+                    if pk_col_name not in transformed_record:
+                        transformed_record[pk_col_name] = str(uuid.uuid4())
+                        logger.debug(f"Generated UUID for primary key {pk_col_name}: {transformed_record[pk_col_name]}")
+                    
                     #  Insert record
                     result = db.execute(insert(table_obj).values(transformed_record))
                     inserted_pk = result.inserted_primary_key[0]
@@ -139,24 +145,19 @@ def insert_records_with_attribute_and_fk_mapping(
                             generated_ids[tgt_table]["mappings"][tgt_fk_col][str(inserted_pk)] = inserted_pk
                             logger.debug(f" FK Mapping saved: {tgt_table}.{tgt_fk_col} -> {inserted_pk}")
 
-                    db.commit()
-
                 except IntegrityError as e:
                     logger.error(f" Integrity Error inserting into {table_name}: {e}")
-                    db.rollback()
-                    if "foreign key" in str(e).lower():
-                        raise ForeignKeyError(table_name, "unknown", "unknown", {"original_error": str(e)})
-                    else:
-                        raise InsertionError(table_name, transformed_record, e)
+                    raise InsertionError(table_name, transformed_record, e)
                 except DataError as e:
                     logger.error(f" Data Error inserting into {table_name}: {e}")
-                    db.rollback()
                     raise InsertionError(table_name, transformed_record, e)
                 except SQLAlchemyError as e:
                     logger.error(f" Database Error inserting into {table_name}: {e}")
-                    db.rollback()
                     raise InsertionError(table_name, transformed_record, e)
 
+        # Commit all changes at the end - all-or-nothing approach
+        logger.info(" Committing all database changes...")
+        db.commit()
         logger.info(" All records inserted successfully.")
         logger.debug(f"Final Generated IDs: {generated_ids}")
         return generated_ids
@@ -164,4 +165,5 @@ def insert_records_with_attribute_and_fk_mapping(
     except Exception as e:
         logger.error(f" Fatal Error in insert flow: {e}")
         db.rollback()
+        logger.error(" All changes rolled back due to error.")
         raise DatabaseError(f"Fatal error in database insertion: {str(e)}")
