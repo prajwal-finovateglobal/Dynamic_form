@@ -32,22 +32,22 @@ def insert_records_with_attribute_and_fk_mapping(
 
     try:
         for table_name in table_insert_order:
-            logger.info(f" Processing table: {table_name}")
+            logger.info(f"Processing table: {table_name}")
 
             #  Validate metadata
             if table_name not in metadata.tables:
-                logger.warning(f" Table {table_name} not found in metadata. Skipping.")
+                logger.warning(f"Table {table_name} not found in metadata. Skipping.")
                 continue
 
             if table_name not in table_records_map:
-                logger.info(f" No records found for table: {table_name}")
+                logger.info(f"No records found for table: {table_name}")
                 continue
 
             table_obj: Table = metadata.tables[table_name]
             records = table_records_map[table_name].get("records", [])
 
             if not records:
-                logger.info(f" No data to insert for table: {table_name}")
+                logger.info(f"No data to insert for table: {table_name}")
                 continue
 
             #  Build attribute_id -> column_name mapping
@@ -58,7 +58,7 @@ def insert_records_with_attribute_and_fk_mapping(
             pk_col_name = list(table_obj.primary_key.columns.keys())[0]
 
             for record in records:
-                logger.info(f" Preparing to insert record: {record}")
+                logger.info(f"Preparing to insert record: {record}")
                 logger.debug(f"Current generated_ids state: {generated_ids}")
 
                 transformed_record = {}
@@ -84,7 +84,7 @@ def insert_records_with_attribute_and_fk_mapping(
                     # Don't inject if it's the primary key of current table
                     if parent_pk_col in table_obj.columns and parent_pk_col not in transformed_record and parent_pk_col != pk_col_name:
                         transformed_record[parent_pk_col] = parent_pk_val
-                        logger.debug(f" Added FK {parent_pk_col}={parent_pk_val} to {table_name}")
+                        logger.debug(f"Added FK {parent_pk_col}={parent_pk_val} to {table_name}")
 
                     #  Inject mapped FKs from parent table
                     for fk_col, mapping in parent_data.get("mappings", {}).items():
@@ -95,29 +95,29 @@ def insert_records_with_attribute_and_fk_mapping(
                             if mapping:
                                 fk_value = list(mapping.values())[-1]
                                 transformed_record[fk_col] = fk_value
-                                logger.debug(f"  Added mapped FK {fk_col}={fk_value} to {table_name}")
+                                logger.debug(f" Added mapped FK {fk_col}={fk_value} to {table_name}")
                             else:
-                                logger.debug(f"  Empty mapping for {fk_col}")
+                                logger.debug(f" Empty mapping for {fk_col}")
                         else:
-                            logger.debug(f"  FK {fk_col} not applicable: in_columns={fk_col in table_obj.columns}, in_record={fk_col in transformed_record}, is_pk={fk_col == pk_col_name}")
+                            logger.debug(f" FK {fk_col} not applicable: in_columns={fk_col in table_obj.columns}, in_record={fk_col in transformed_record}, is_pk={fk_col == pk_col_name}")
 
                 # Check if this table has any mappings that should be applied
-                if table_name in generated_ids and "mappings" in generated_ids[table_name]:
+                if table_name in generated_ids and "mappings"in generated_ids[table_name]:
                     logger.debug(f"Table {table_name} has pre-existing mappings: {generated_ids[table_name]['mappings']}")
                     for fk_col, mapping in generated_ids[table_name]["mappings"].items():
                         if fk_col in table_obj.columns and fk_col not in transformed_record and fk_col != pk_col_name:
                             if mapping:
                                 fk_value = list(mapping.values())[-1]
                                 transformed_record[fk_col] = fk_value
-                                logger.debug(f"  Applied pre-existing mapping {fk_col}={fk_value} to {table_name}")
+                                logger.debug(f" Applied pre-existing mapping {fk_col}={fk_value} to {table_name}")
                         else:
-                            logger.debug(f"  Pre-existing mapping {fk_col} not applicable")
+                            logger.debug(f" Pre-existing mapping {fk_col} not applicable")
 
                 try:
                     #  Insert record
                     result = db.execute(insert(table_obj).values(transformed_record))
                     inserted_pk = result.inserted_primary_key[0]
-                    logger.info(f" Inserted into {table_name} -> PK={inserted_pk}.")
+                    logger.info(f"Inserted into {table_name} -> PK={inserted_pk}.")
 
                     generated_ids[table_name] = {
                         "pk_col": pk_col_name,
@@ -125,7 +125,7 @@ def insert_records_with_attribute_and_fk_mapping(
                         "mappings": generated_ids.get(table_name, {}).get("mappings", {}),
                     }
 
-                    if "fk_targets" in record:
+                    if "fk_targets"in record:
                         for target in record["fk_targets"]:
                             tgt_table = target["target_table"]
                             tgt_fk_col = target.get("target_pk") or target.get("target_fk_column")
@@ -137,31 +137,31 @@ def insert_records_with_attribute_and_fk_mapping(
                                 generated_ids[tgt_table]["mappings"][tgt_fk_col] = {}
 
                             generated_ids[tgt_table]["mappings"][tgt_fk_col][str(inserted_pk)] = inserted_pk
-                            logger.debug(f" FK Mapping saved: {tgt_table}.{tgt_fk_col} -> {inserted_pk}")
+                            logger.debug(f"FK Mapping saved: {tgt_table}.{tgt_fk_col} -> {inserted_pk}")
 
                     db.commit()
 
                 except IntegrityError as e:
-                    logger.error(f" Integrity Error inserting into {table_name}: {e}")
+                    logger.error(f"Integrity Error inserting into {table_name}: {e}")
                     db.rollback()
-                    if "foreign key" in str(e).lower():
+                    if "foreign key"in str(e).lower():
                         raise ForeignKeyError(table_name, "unknown", "unknown", {"original_error": str(e)})
                     else:
                         raise InsertionError(table_name, transformed_record, e)
                 except DataError as e:
-                    logger.error(f" Data Error inserting into {table_name}: {e}")
+                    logger.error(f"Data Error inserting into {table_name}: {e}")
                     db.rollback()
                     raise InsertionError(table_name, transformed_record, e)
                 except SQLAlchemyError as e:
-                    logger.error(f" Database Error inserting into {table_name}: {e}")
+                    logger.error(f"Database Error inserting into {table_name}: {e}")
                     db.rollback()
                     raise InsertionError(table_name, transformed_record, e)
 
-        logger.info(" All records inserted successfully.")
+        logger.info("All records inserted successfully.")
         logger.debug(f"Final Generated IDs: {generated_ids}")
         return generated_ids
 
     except Exception as e:
-        logger.error(f" Fatal Error in insert flow: {e}")
+        logger.error(f"Fatal Error in insert flow: {e}")
         db.rollback()
         raise DatabaseError(f"Fatal error in database insertion: {str(e)}")
