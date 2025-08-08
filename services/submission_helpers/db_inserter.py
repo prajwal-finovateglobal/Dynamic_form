@@ -22,10 +22,10 @@ def insert_records_with_attribute_and_fk_mapping(
 ) -> Dict[str, Any]:
     """
     Inserts records into DB in topological order.
-     Converts attribute IDs -> column names.
-     Captures PKs for each inserted record.
-     Handles multiple PK -> FK mappings for child tables.
-     Logs every important step for debugging.
+    Converts attribute IDs -> column names.
+    Captures PKs for each inserted record.
+    Handles multiple PK -> FK mappings for child tables.
+    Logs every important step for debugging.
     """
 
     generated_ids: Dict[str, Any] = {}
@@ -102,7 +102,7 @@ def insert_records_with_attribute_and_fk_mapping(
                             logger.debug(f" FK {fk_col} not applicable: in_columns={fk_col in table_obj.columns}, in_record={fk_col in transformed_record}, is_pk={fk_col == pk_col_name}")
 
                 # Check if this table has any mappings that should be applied
-                if table_name in generated_ids and "mappings"in generated_ids[table_name]:
+                if table_name in generated_ids and "mappings" in generated_ids[table_name]:
                     logger.debug(f"Table {table_name} has pre-existing mappings: {generated_ids[table_name]['mappings']}")
                     for fk_col, mapping in generated_ids[table_name]["mappings"].items():
                         if fk_col in table_obj.columns and fk_col not in transformed_record and fk_col != pk_col_name:
@@ -125,7 +125,7 @@ def insert_records_with_attribute_and_fk_mapping(
                         "mappings": generated_ids.get(table_name, {}).get("mappings", {}),
                     }
 
-                    if "fk_targets"in record:
+                    if "fk_targets" in record:
                         for target in record["fk_targets"]:
                             tgt_table = target["target_table"]
                             tgt_fk_col = target.get("target_pk") or target.get("target_fk_column")
@@ -144,7 +144,7 @@ def insert_records_with_attribute_and_fk_mapping(
                 except IntegrityError as e:
                     logger.error(f"Integrity Error inserting into {table_name}: {e}")
                     db.rollback()
-                    if "foreign key"in str(e).lower():
+                    if "foreign key" in str(e).lower():
                         raise ForeignKeyError(table_name, "unknown", "unknown", {"original_error": str(e)})
                     else:
                         raise InsertionError(table_name, transformed_record, e)
@@ -157,7 +157,7 @@ def insert_records_with_attribute_and_fk_mapping(
                     db.rollback()
                     raise InsertionError(table_name, transformed_record, e)
 
-        logger.info("All records inserted successfully.")
+        logger.info(" All records inserted successfully.")
         logger.debug(f"Final Generated IDs: {generated_ids}")
         return generated_ids
 
