@@ -98,13 +98,15 @@ def _validate_attributes_by_ids(
 
         logger.info(f"Attribute ID: {attr_id}, Value: {value}")
 
-        if int(attr_id)  not in required_attribute_ids:
-            errors.append(f"[{source_name}] Attribute {attr_id} is not required")
-            if (value is None or value == ""):
-                errors.append(f"[{source_name}] Missing required attribute ID: {attr_id}")
-            
+        # Check if this is a required attribute
+        is_required = int(attr_id) in required_attribute_ids
         
-        if value is not None:
+        # If it's required but missing or empty, add error
+        if is_required and (value is None or value == ""):
+            errors.append(f"[{source_name}] Missing required attribute ID: {attr_id}")
+        
+        # If value is provided, validate its type
+        if value is not None and value != "":
             logger.info(f"check : {attr.attribute_data_type}")
             if not _validate_type(value, attr.attribute_data_type):
                 errors.append(f"[{source_name}] Attribute {attr_id} expects {attr.attribute_data_type}, got {type(value).__name__}")
