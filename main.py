@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import submission, debug_router
+from routers import submission, debug_router, form_router, sub_form_router, attribute_route
 from utils.logger import get_logger
 from utils.exception_handlers import register_exception_handlers
 
@@ -18,5 +18,8 @@ register_exception_handlers(app)
 
 # Include routers
 app.include_router(submission.router, prefix="/form", tags=["submission"])
+app.include_router(form_router.router, prefix="/api/forms", tags=["Form APIs"])
+app.include_router(sub_form_router.router, prefix="/api/sub-forms", tags=["Sub Form APIs"])
+app.include_router(attribute_route.router, prefix="/api/attributes", tags=["Attribute APIs"])
 # app.include_router(debug_router.router)
 

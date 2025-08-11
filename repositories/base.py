@@ -22,7 +22,6 @@ from models.entity import (CustomerEntityDetails,
 )
 from models.form import (MasterForm,
     MasterSubForm,
-    MasterFormSubFormMapping
 )
 from models.location import (MasterState,
     MasterDistrict
@@ -52,7 +51,6 @@ __all__ = [
     "CustomerEntityMemberDetails",
     "MasterForm",
     "MasterSubForm",
-    "MasterFormSubFormMapping",
     "MasterState",
     "MasterDistrict",
     "PinCodeLocation"

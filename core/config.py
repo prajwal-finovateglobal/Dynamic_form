@@ -25,8 +25,8 @@ if not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
 # Generating Database URL
 encoded_password = quote_plus(str(DB_PASSWORD))
 
-# DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-DATABASE_URL = "postgresql://postgres:1234@localhost:5432/cbs_dev_restore"
+DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# DATABASE_URL = "postgresql://postgres:1234@localhost:5432/cbs_dev_restore"
 print(DATABASE_URL)
 
 # Logging Configuration
