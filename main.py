@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routers import submission, debug_router, form_router, sub_form_router, attribute_route
 from utils.logger import get_logger
 from utils.exception_handlers import register_exception_handlers
@@ -15,6 +16,14 @@ logger.info("Starting FastAPI application")
 
 # Register exception handlers
 register_exception_handlers(app)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include routers
 app.include_router(submission.router, prefix="/form", tags=["submission"])
