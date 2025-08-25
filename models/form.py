@@ -45,7 +45,7 @@ class MasterForm(Base):
 class MasterSubForm(Base):
     __tablename__ = "cbs_master_sub_forms"
     sub_form_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    status = Column(BigInteger)
+    status = Column(String(255))
     created_at = Column(TIMESTAMP)
     updated_at = Column(TIMESTAMP)
     version = Column(BigInteger)

@@ -30,7 +30,7 @@ class MasterForm(MasterFormBase):
 
 # ---------- MasterSubForm ----------
 class MasterSubFormBase(BaseModel):
-    status: Optional[int]
+    status: Optional[str]
     name: str = Field(..., max_length=50)
     description: Optional[str]
     attribute_ids: Optional[List[int]]
